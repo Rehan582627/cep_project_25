@@ -1,25 +1,29 @@
 import { useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
+import toast from "react-hot-toast";
 
 export default function Signup(props) {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSignup = async (e) => {
     e.preventDefault();
     
     if (password !== confirmPassword) {
-      alert("Passwords do not match!");
+      toast.error("Passwords do not match!");
       return;
     }
 
     if (password.length < 6) {
-      alert("Password must be at least 6 characters long!");
+      toast.error("Password must be at least 6 characters long!");
       return;
     }
+
+    setLoading(true);
 
     try {
       const res = await fetch("http://localhost:5000/api/register", {
@@ -31,18 +35,24 @@ export default function Signup(props) {
       console.log("Signup Response:", data);
       
       if (data.success) {
-        alert("Account created successfully! Please login.");
+        toast.success("Account created successfully! 🎉");
         setUsername("");
         setEmail("");
         setPassword("");
         setConfirmPassword("");
-        props.onSwitchToLogin(); // Switch to login page
+        
+        // Switch to login after 1.5 seconds
+        setTimeout(() => {
+          props.onSwitchToLogin();
+        }, 1500);
       } else {
-        alert(data.message);
+        toast.error(data.message || "Registration failed");
       }
     } catch (err) {
       console.error(err);
-      alert("Server error");
+      toast.error("Server error. Please try again later.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -63,22 +73,21 @@ export default function Signup(props) {
       });
       
       const data = await res.json();
-      console.log("Google Login Response:", data);
       
       if (data.success) {
-        alert(`Welcome ${data.user.name || data.user.username}!`);
+        toast.success(`Welcome, ${data.user.name || data.user.username}! 🎉`);
         localStorage.setItem("user", JSON.stringify(data.user));
       } else {
-        alert(data.message);
+        toast.error(data.message || "Google signup failed");
       }
     } catch (err) {
       console.error("Google Login Error:", err);
-      alert("Failed to login with Google");
+      toast.error("Failed to signup with Google");
     }
   };
 
   const handleGoogleError = () => {
-    alert("Google Login Failed");
+    toast.error("Google signup failed. Please try again.");
   };
 
   return (
@@ -95,7 +104,8 @@ export default function Signup(props) {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-green-400 outline-none"
+              disabled={loading}
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-green-400 outline-none disabled:opacity-50"
             />
           </div>
 
@@ -107,7 +117,8 @@ export default function Signup(props) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-green-400 outline-none"
+              disabled={loading}
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-green-400 outline-none disabled:opacity-50"
             />
           </div>
 
@@ -120,7 +131,8 @@ export default function Signup(props) {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-green-400 outline-none"
+              disabled={loading}
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-green-400 outline-none disabled:opacity-50"
             />
           </div>
 
@@ -133,15 +145,17 @@ export default function Signup(props) {
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
               minLength={6}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-green-400 outline-none"
+              disabled={loading}
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-green-400 outline-none disabled:opacity-50"
             />
           </div>
 
           <button
             type="submit"
-            className="w-full py-3 bg-gradient-to-r from-green-400 to-blue-600 text-white rounded-xl font-semibold shadow-md hover:opacity-90 transition"
+            disabled={loading}
+            className="w-full py-3 bg-gradient-to-r from-green-400 to-blue-600 text-white rounded-xl font-semibold shadow-md hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Sign Up
+            {loading ? "Creating Account..." : "Sign Up"}
           </button>
 
           <div className="flex items-center my-4">
@@ -161,19 +175,20 @@ export default function Signup(props) {
             />
           </div>
         </form>
-<p className="mt-4 text-gray-600 text-sm">
-  Already have an account?{" "}
-  <a
-    href="#"
-    onClick={(e) => {
-      e.preventDefault();
-      props.onSwitchToLogin();
-    }}
-    className="text-blue-600 font-semibold hover:underline"
-  >
-    Login
-  </a>
-</p>
+
+        <p className="mt-4 text-gray-600 text-sm">
+          Already have an account?{" "}
+          
+            <a href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              props.onSwitchToLogin();
+            }}
+            className="text-blue-600 font-semibold hover:underline"
+          >
+            Login
+          </a>
+        </p>
       </div>
     </div>
   );
